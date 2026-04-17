@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hang out plus starter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-shadow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .word-token {
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s;
+            touch-action: manipulation;
+            font-size: 1.25rem;
+            padding: 0.5rem 1rem;
+        }
+        .word-token:hover {
+            transform: translateY(-2px);
+        }
+        .word-card {
+            background-color: #fff;
+            border: 2px solid #a3b8e7;
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .word-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        }
+        #rearranged-word {
+            min-height: 4rem;
+        }
+        .match-card {
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s, opacity 0.3s;
+        }
+        .match-card:hover {
+            transform: scale(1.02);
+        }
+        .match-selected {
+            border: 3px solid #fb923c;
+            box-shadow: 0 0 15px rgba(251, 146, 60, 0.5);
+        }
+        .pokeball-icon {
+            width: 30px;
+            height: 30px;
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .pokemon-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-radius: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .pokemon-card:hover {
+            transform: scale(1.05);
+        }
+        .pokemon-img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+        #new-pokemon-display .pokemon-img {
+             width: 150px;
+             height: 150px;
+        }
+        .pronounce-btn {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pronounce-btn:hover {
+            background-color: #357ABD;
+        }
+        .pronounce-btn-slow {
+            background-color: #f5a623;
+        }
+        .pronounce-btn-slow:hover {
+            background-color: #f39c12;
+        }
+        .mic-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #ef4444;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .mic-btn:hover {
+            background-color: #dc2626;
+        }
+        .mic-btn.is-listening {
+            background-color: #22c55e;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-700 min-h-screen">
+    <!-- 主容器 -->
+    <div class="container my-8">
+        
+        <!-- 標題、分數和排行榜 -->
+        <header class="py-4 md:py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                <!-- 標題與副標題 -->
+                <div class="text-center md:text-left mb-4 md:mb-0">
+                    <h1 class="text-4xl md:text-5xl font-bold text-blue-600 mb-2">Hang out plus starter</h1>
+                    <p class="text-lg text-gray-500">讓我們一起用遊戲學英文！</p>
+                </div>
+                
+                <!-- 分數與排行榜按鈕 -->
+                <div class="flex items-center space-x-4">
+                    <div class="text-lg font-bold bg-white px-4 py-2 rounded-lg shadow">
+                        總分: <span id="total-score" class="text-orange-500">0</span>
+                    </div>
+                    <button id="my-pokemon-btn" class="px-4 py-2 rounded-full bg-red-500 text-white font-bold">我的寶可夢 (<span id="pokemon-count">0</span>)</button>
+                    <button id="leaderboard-btn" class="px-4 py-2 rounded-full bg-yellow-500 text-white font-bold">排行榜</button>
+                </div>
+            </div>
+            
+            <!-- 寶可夢球進度與收服條件 -->
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-4 text-xl">
+                    <span>單元進度球：</span>
+                    <div id="pokeball-container" class="flex items-center space-x-1"></div>
+                </div>
+                <div id="pokemon-reward-area" class="mt-2 text-xl font-bold text-red-500"></div>
+                <p id="pokemon-catch-condition" class="text-center text-gray-600 mt-1 font-semibold">每獲得 100 分，就有機會收服一隻新寶可夢！</p>
+            </div>
+        </header>
+
+        <!-- 導覽列與單元選擇 -->
+        <nav class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4 mb-4 md:mb-8">
+            <div class="flex items-center space-x-2">
+                <label for="unit-select" class="text-lg font-bold">選擇單元:</label>
+                <select id="unit-select" class="px-3 py-2 rounded-lg border border-gray-300">
+                    <option value="u1">Unit 1 - School</option>
+                    <option value="u2">Unit 2 - Family</option>
+                    <option value="u3">Unit 3 - Toy Store</option>
+                    <option value="u4">Unit 4 - Shapes and Colors</option>
+                    <option value="u5">Unit 5 - The Playground</option>
+                    <option value="u6">Unit 6 - Our Face and Body</option>
+                    <option value="u7">Unit 7 - Food</option>
+                    <option value="u8">Unit 8 - Sports Day</option>
+                    <option value="u9">Unit 9 - At the Zoo</option>
+                    <option value="u10">Unit 10 - Time</option>
+                </select>
+            </div>
+            <div class="flex flex-wrap justify-center space-x-2 md:space-x-4">
+                <button id="btn-words-list" class="px-4 py-2 my-1 rounded-full bg-blue-600 text-white font-bold btn-game">單字卡</button>
+                <button id="btn-game-word-match" class="px-4 py-2 my-1 rounded-full bg-teal-600 text-white font-bold btn-game">單字配對</button>
+                <button id="btn-game-word-fill" class="px-4 py-2 my-1 rounded-full bg-indigo-600 text-white font-bold btn-game">單字填空</button>
+                <button id="btn-game2" class="px-4 py-2 my-1 rounded-full bg-green-600 text-white font-bold btn-game">單字重組</button>
+                <button id="btn-game-spelling" class="px-4 py-2 my-1 rounded-full bg-orange-600 text-white font-bold btn-game">單字拼寫</button>
+                <button id="btn-game4" class="px-4 py-2 my-1 rounded-full bg-purple-600 text-white font-bold btn-game">句子配對</button>
+                <button id="btn-game5" class="px-4 py-2 my-1 rounded-full bg-pink-600 text-white font-bold btn-game">句子重組</button>
+                <button id="btn-game6" class="px-4 py-2 my-1 rounded-full bg-red-600 text-white font-bold btn-game">快問快答</button>
+                <button id="btn-game-speak-word" class="px-4 py-2 my-1 rounded-full bg-cyan-600 text-white font-bold btn-game">AI口說(單字)</button>
+                <button id="btn-game-speak-sentence" class="px-4 py-2 my-1 rounded-full bg-sky-600 text-white font-bold btn-game">AI口說(句子)</button>
+            </div>
+        </nav>
+
+        <!-- 遊戲區域 -->
+        <main id="game-area" class="p-4 md:p-6 bg-gray-50 rounded-2xl card-shadow min-h-[50vh] flex flex-col justify-center items-center text-center">
+            <p class="text-center text-md md:text-xl text-gray-400">請從上方選擇一個單元和遊戲開始！</p>
+        </main>
+        
+        <!-- 各種訊息提示 -->
+        <div id="feedback-message" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-green-500 text-white rounded-full shadow-lg hidden"></div>
+        <div id="error-message" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-red-500 text-white rounded-full shadow-lg hidden">答錯了! 請再試一次。</div>
+        <div id="pokeball-message" class="fixed bottom-16 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-blue-500 text-white rounded-full shadow-lg hidden">恭喜你收集到一顆單元進度球！</div>
+
+    </div>
+
+    <!-- Modals -->
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-6 text-yellow-600">🏆 排行榜 🏆</h2>
+            <div id="leaderboard-list" class="space-y-2 text-left"></div>
+            <button id="close-leaderboard-btn" class="mt-6 px-6 py-2 rounded-full bg-gray-500 text-white font-bold">關閉</button>
+        </div>
+    </div>
+
+    <div id="my-pokemon-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-6 text-red-600">🐾 我的寶可夢 🐾</h2>
+            <div id="my-pokemon-list" class="grid grid-cols-3 md:grid-cols-4 gap-4 max-h-64 overflow-y-auto p-2 bg-gray-100 rounded-lg"></div>
+            <button id="close-pokemon-btn" class="mt-6 px-6 py-2 rounded-full bg-gray-500 text-white font-bold">關閉</button>
+        </div>
+    </div>
+    
+    <div id="new-pokemon-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-4 text-blue-600">太棒了！</h2>
+            <p class="text-xl mb-4">你收服了一隻新的寶可夢！</p>
+            <div id="new-pokemon-display" class="pokemon-card bg-blue-100 py-6">
+                <!-- 新寶可夢內容 -->
+            </div>
+            <button id="close-new-pokemon-btn" class="mt-6 px-6 py-2 rounded-full bg-blue-500 text-white font-bold">繼續遊戲</button>
+        </div>
+    </div>
+
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 全域變數 ---
+        let db, auth, userId, userName;
+        let totalScore = 0;
+        let collectedPokemon = [];
+        const scorePerCorrect = 10;
+        const scoreForNewPokemon = 100; // 每100分獲得一隻
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const leaderboardCollectionPath = `/artifacts/${appId}/public/data/leaderboard_starter`;
+
+        // --- Firebase 初始化與認證 ---
+        async function initFirebase() {
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                userId = auth.currentUser.uid;
+                await loadUserData();
+
+            } catch (error) {
+                console.error("Firebase 初始化失敗:", error);
+            }
+        }
+        
+        // --- 使用者與分數處理 ---
+        async function loadUserData() {
+            const userDocRef = doc(db, leaderboardCollectionPath, userId);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (userDocSnap.exists()) {
+                const data = userDocSnap.data();
+                userName = data.name || `Player-${userId.substring(0, 6)}`;
+                totalScore = data.score || 0;
+                collectedPokemon = data.collectedPokemon || [];
+            } else {
+                // 如果使用者不存在，自動建立新使用者
+                userName = `Player-${userId.substring(0, 6)}`;
+                totalScore = 0;
+                collectedPokemon = [];
+                await saveUserData(); // 儲存新使用者資料
+            }
+            updateUIDisplays();
+        }
+
+        async function saveUserData() {
+            if (!db || !userId || !userName) return;
+            const userDocRef = doc(db, leaderboardCollectionPath, userId);
+            try {
+                await setDoc(userDocRef, { 
+                    name: userName, 
+                    score: totalScore,
+                    collectedPokemon: collectedPokemon
+                }, { merge: true });
+            } catch (error) {
+                console.error("儲存使用者資料失敗:", error);
+            }
+        }
+
+        function updateUIDisplays() {
+            document.getElementById('total-score').textContent = totalScore;
+            document.getElementById('pokemon-count').textContent = collectedPokemon.length;
+        }
+
+        window.handleCorrectAnswer = (points = scorePerCorrect) => {
+            const oldScore = totalScore;
+            totalScore += points;
+            
+            if (Math.floor(oldScore / scoreForNewPokemon) < Math.floor(totalScore / scoreForNewPokemon)) {
+                grantPokemonReward();
+            }
+
+            updateUIDisplays();
+            saveUserData();
+            const feedbackMsg = document.getElementById('feedback-message');
+            feedbackMsg.textContent = `答對了! 🎉 +${points}分`;
+        };
+
+        // --- 排行榜處理 ---
+        async function showLeaderboard() {
+            if (!db) return;
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '<p>讀取中...</p>';
+            document.getElementById('leaderboard-modal').style.display = 'block';
+
+            try {
+                const q = query(collection(db, leaderboardCollectionPath));
+                const querySnapshot = await getDocs(q);
+                
+                const scores = [];
+                querySnapshot.forEach((doc) => { scores.push(doc.data()); });
+                scores.sort((a, b) => (b.score || 0) - (a.score || 0));
+                
+                leaderboardList.innerHTML = '';
+                if (scores.length === 0) {
+                    leaderboardList.innerHTML = '<p>目前沒有紀錄。</p>';
+                    return;
+                }
+
+                scores.slice(0, 10).forEach((data, index) => {
+                    const rank = index + 1;
+                    const rankEmoji = ["🥇", "🥈", "🥉"][rank - 1] || `${rank}.`;
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center justify-between p-2 rounded-lg';
+                    item.innerHTML = `
+                        <span class="font-bold text-lg w-12">${rankEmoji}</span>
+                        <span class="flex-1">${data.name || '匿名'}</span>
+                        <span class="font-bold text-orange-500">${data.score || 0}分</span>
+                    `;
+                    leaderboardList.appendChild(item);
+                });
+
+            } catch (error) {
+                console.error("讀取排行榜失敗:", error);
+                leaderboardList.innerHTML = '<p>讀取排行榜失敗。</p>';
+            }
+        }
+        
+        // --- 寶可夢獎勵機制 ---
+        const POKEMON_LIST = [
+            { name: '妙蛙種子', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png' },
+            { name: '小火龍', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png' },
+            { name: '傑尼龜', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png' },
+            { name: '皮卡丘', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png' },
+            { name: '胖丁', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/39.png' },
+            { name: '卡比獸', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png' },
+            { name: '伊布', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png' },
+            { name: '可達鴨', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/54.png' },
+            { name: '喵喵', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/52.png' },
+            { name: '鯉魚王', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/129.png' },
+            { name: '耿鬼', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png' },
+            { name: '夢幻', imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png' }
+        ];
+
+        function grantPokemonReward() {
+            const uncollectedPokemon = POKEMON_LIST.filter(p => !collectedPokemon.some(cp => cp.name === p.name));
+            if (uncollectedPokemon.length === 0) { return; }
+            const newPokemon = uncollectedPokemon[Math.floor(Math.random() * uncollectedPokemon.length)];
+            collectedPokemon.push(newPokemon);
+            showNewPokemonModal(newPokemon);
+        }
+
+        function showNewPokemonModal(pokemon) {
+            const display = document.getElementById('new-pokemon-display');
+            display.innerHTML = `<img src="${pokemon.imageUrl}" alt="${pokemon.name}" class="pokemon-img mx-auto"><p class="text-2xl font-bold mt-4">${pokemon.name}</p>`;
+            document.getElementById('new-pokemon-modal').style.display = 'block';
+        }
+
+        function showMyPokemon() {
+            const listDiv = document.getElementById('my-pokemon-list');
+            listDiv.innerHTML = '';
+            if (collectedPokemon.length === 0) {
+                listDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">你還沒有收服任何寶可夢，快去玩遊戲吧！</p>';
+            } else {
+                collectedPokemon.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'pokemon-card';
+                    card.innerHTML = `<img src="${p.imageUrl}" alt="${p.name}" class="pokemon-img mx-auto" loading="lazy"><p class="font-bold mt-2 text-sm">${p.name}</p>`;
+                    listDiv.appendChild(card);
+                });
+            }
+            document.getElementById('my-pokemon-modal').style.display = 'block';
+        }
+        
+        // --- 事件監聽 ---
+        document.getElementById('leaderboard-btn').addEventListener('click', showLeaderboard);
+        document.getElementById('close-leaderboard-btn').addEventListener('click', () => {
+            document.getElementById('leaderboard-modal').style.display = 'none';
+        });
+
+        document.getElementById('my-pokemon-btn').addEventListener('click', showMyPokemon);
+        document.getElementById('close-pokemon-btn').addEventListener('click', () => {
+            document.getElementById('my-pokemon-modal').style.display = 'none';
+        });
+
+        document.getElementById('close-new-pokemon-btn').addEventListener('click', () => {
+            document.getElementById('new-pokemon-modal').style.display = 'none';
+            updateUIDisplays();
+            saveUserData();
+        });
+
+        // 啟動 Firebase
+        initFirebase();
+    </script>
+
+
+    <script>
+        // --- 遊戲核心邏輯 (非 Firebase) ---
+        const speechSynthesizer = window.speechSynthesis;
+        let voices = [];
+
+        function setVoice() {
+            voices = speechSynthesizer.getVoices().filter(voice => voice.lang.startsWith('en-'));
+        }
+
+        if (speechSynthesizer.onvoiceschanged !== undefined) {
+            speechSynthesizer.onvoiceschanged = setVoice;
+        }
+        setVoice();
+        
+        const speakWord = (text, rate = 1) => {
+            if (speechSynthesizer.speaking) speechSynthesizer.cancel(); 
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // 優先選用已知的、更高品質的語音
+            const preferredVoices = [
+                'Google US English', // Android/Chrome 上常見的高品質語音
+                'Samantha',          // iOS 上常見的高品質語音
+                'Alex'               // 另一種高品質語音
+            ];
+
+            let selectedVoice = null;
+            
+            for (const name of preferredVoices) {
+                selectedVoice = voices.find(voice => voice.name === name && voice.lang.startsWith('en-'));
+                if (selectedVoice) break;
+            }
+
+            // 如果找不到偏好的語音，則使用備用邏輯
+            if (!selectedVoice) {
+                 selectedVoice = voices.find(voice => voice.lang === 'en-US' && !voice.localService) || voices.find(voice => voice.lang === 'en-US');
+            }
+
+            utterance.voice = selectedVoice || null;
+            utterance.lang = 'en-US';
+            utterance.pitch = 1; 
+            utterance.rate = rate;
+            speechSynthesizer.speak(utterance);
+        };
+        
+        const pokeballSvg = `<svg class="pokeball-icon" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="90" fill="white" stroke="black" stroke-width="10"/><path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="black" stroke-width="10" stroke-linecap="round"/><path d="M 10 100 A 90 90 0 0 0 190 100" fill="red"/><circle cx="100" cy="100" r="30" fill="white" stroke="black" stroke-width="10"/><circle cx="100" cy="100" r="15" fill="black"/></svg>`;
+        const pokeballContainer = document.getElementById('pokeball-container');
+        const pokemonRewardArea = document.getElementById('pokemon-reward-area');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const errorMessage = document.getElementById('error-message');
+        const pokeballMessage = document.getElementById('pokeball-message');
+        let pokeballCount = 0;
+        let completedGames = [];
+
+        function updatePokeballs() {
+            pokeballContainer.innerHTML = '';
+            for (let i = 0; i < pokeballCount; i++) pokeballContainer.innerHTML += pokeballSvg;
+            pokemonRewardArea.textContent = pokeballCount >= 4 ? `恭喜你，完成此單元4個遊戲!` : `還差 ${4 - pokeballCount} 個進度球就可以完成此單元！`;
+        }
+        
+        function handleGameComplete(gameId) {
+            const uniqueGameId = `${unitSelect.value}-${gameId}`;
+            if (!completedGames.includes(uniqueGameId)) {
+                completedGames.push(uniqueGameId);
+                pokeballCount++;
+                updatePokeballs();
+                pokeballMessage.classList.remove('hidden');
+                setTimeout(() => pokeballMessage.classList.add('hidden'), 2000);
+            }
+        }
+        
+        function showCorrectMessage(points) {
+            const scoreToAward = points || 10;
+            if(typeof window.handleCorrectAnswer === 'function') {
+                window.handleCorrectAnswer(scoreToAward);
+            } else {
+                feedbackMessage.textContent = '答對了! 🎉';
+            }
+            feedbackMessage.classList.remove('hidden');
+            setTimeout(() => feedbackMessage.classList.add('hidden'), 1500);
+        }
+
+        function showErrorMessage() {
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => errorMessage.classList.add('hidden'), 1500);
+        }
+        
+        // --- 遊戲數據 ---
+        const gameData = {
+            u1: {
+                words: [{word:"backpack",chinese:"背包",sentence:"My backpack is heavy."},{word:"book",chinese:"書",sentence:"I like to read a book."},{word:"chair",chinese:"椅子",sentence:"Sit on the chair."},{word:"classroom",chinese:"教室",sentence:"This is our classroom."},{word:"crayon",chinese:"蠟筆",sentence:"I have a red crayon."},{word:"desk",chinese:"書桌",sentence:"My book is on the desk."},{word:"eraser",chinese:"橡皮擦",sentence:"I need an eraser."},{word:"paper",chinese:"紙",sentence:"Give me a piece of paper."},{word:"pen",chinese:"筆",sentence:"I write with a pen."},{word:"pencil",chinese:"鉛筆",sentence:"This is my pencil."},{word:"ruler",chinese:"尺",sentence:"Use a ruler to draw a line."},{word:"school",chinese:"學校",sentence:"I go to school every day."}],
+                speakingWords: ["backpack","book","chair","classroom","crayon","desk","eraser","paper","pen","pencil","ruler","school"],
+                speakingSentences: ["I like pencils.","I don’t like erasers.","He likes the book.","She doesn't like the pen.","He likes school. So do I.","They don’t like the classroom. Neither do I."],
+                wordFillIn: [{sentence:"My __ is on the desk.",chinese:"我的書在書桌上。",answer:"book"},{sentence:"I go to __ on weekdays.",chinese:"我平日去學校。",answer:"school"},{sentence:"I need a __ and an eraser.",chinese:"我需要一支鉛筆和一個橡皮擦。",answer:"pencil"}],
+                sentenceMatch: [{question:"Do you like pencils?",answer:"Yes, I do."},{question:"Do you like the red pen?",answer:"No, I don’t."},{question:"He likes rulers. What about you?",answer:"So do I."},{question:"She doesn’t like crayons. What about you?",answer:"Neither do I."}],
+                sentenceScramble: ["I like my new pencil.","I do not like this chair.","My eraser is on the desk.","She likes her school."],
+                popQuiz: [{question:"用來寫字的工具是？",answer:"pencil",options:["pencil","chair","ruler","school"]},{question:"學生上課的地方是？",answer:"classroom",options:["classroom","backpack","book","desk"]}]
+            },
+            u2: {
+                words: [{word:"brother",chinese:"兄弟",sentence:"He is my brother."},{word:"dad",chinese:"爸爸",sentence:"My dad is tall."},{word:"family",chinese:"家庭",sentence:"I love my family."},{word:"friend",chinese:"朋友",sentence:"She is my best friend."},{word:"mom",chinese:"媽媽",sentence:"My mom is kind."},{word:"sister",chinese:"姊妹",sentence:"I have one sister."},{word:"big",chinese:"大的",sentence:"The house is big."},{word:"old",chinese:"老的",sentence:"My grandpa is old."},{word:"short",chinese:"矮的",sentence:"My sister is short."},{word:"small",chinese:"小的",sentence:"The cat is small."},{word:"tall",chinese:"高的",sentence:"My brother is tall."},{word:"young",chinese:"年輕的",sentence:"The baby is young."}],
+                speakingWords: ["brother","dad","family","friend","mom","sister","big","old","short","small","tall","young"],
+                speakingSentences: ["My dad is tall.","My sister is young.","What is he wearing?","He is wearing a big hat.","Are you wearing a small shirt?","Yes, I am."],
+                wordFillIn: [{sentence:"My __ is very tall.",chinese:"我爸爸非常高。",answer:"dad"},{sentence:"She is my younger __.",chinese:"她是我的妹妹。",answer:"sister"},{sentence:"He is a __ boy.",chinese:"他是一個高個子男孩。",answer:"tall"}],
+                sentenceMatch: [{question:"Is your brother tall?",answer:"Yes, he is."},{question:"Is your mom young?",answer:"Yes, she is."},{question:"Is the cat big or small?",answer:"It is small."}],
+                sentenceScramble: ["My brother is young.","My sister is short.","My family is big.","He is a tall friend."],
+                popQuiz: [{question:"家裡的男性長輩是？",answer:"dad",options:["dad","mom","sister","brother"]},{question:"身高很高的人是？",answer:"tall",options:["tall","short","small","young"]}]
+            },
+            u3: {
+                words: [{word:"ball",chinese:"球",sentence:"The ball is round."},{word:"balloons",chinese:"氣球",sentence:"I have three balloons."},{word:"boat",chinese:"船",sentence:"The boat is on the water."},{word:"boxes",chinese:"盒子",sentence:"The toys are in the boxes."},{word:"car",chinese:"車",sentence:"The car is red."},{word:"dolls",chinese:"娃娃",sentence:"She has many dolls."},{word:"gift",chinese:"禮物",sentence:"This is a gift for you."},{word:"planes",chinese:"飛機",sentence:"Planes can fly."},{word:"robots",chinese:"機器人",sentence:"I want a cool robot."},{word:"top",chinese:"陀螺",sentence:"The top is spinning."},{word:"toy",chinese:"玩具",sentence:"This is my favorite toy."},{word:"trains",chinese:"火車",sentence:"The trains are long."}],
+                speakingWords: ["ball","balloons","boat","boxes","car","dolls","gift","planes","robots","top","toy","trains"],
+                speakingSentences: ["What do you want?","I want a robot, please.","Does the gift look good?","Yes, it does.","The toy car smells new.","No, it doesn’t."],
+                wordFillIn: [{sentence:"I want a toy __.",chinese:"我想要一輛玩具車。",answer:"car"},{sentence:"She has many pretty __.",chinese:"她有很多漂亮的娃娃。",answer:"dolls"},{sentence:"This is a birthday __.",chinese:"這是一個生日禮物。",answer:"gift"}],
+                sentenceMatch: [{question:"What do you want?",answer:"I want a red ball."},{question:"Does the robot look cool?",answer:"Yes, it does."},{question:"Does the toy train taste good?",answer:"No, it doesn’t."}],
+                sentenceScramble: ["I want a new toy boat.","The gift looks very good.","She wants a lot of balloons.","He has two toy robots."],
+                popQuiz: [{question:"可以在天上飛的玩具是？",answer:"planes",options:["planes","boat","car","trains"]},{question:"生日會收到的東西是？",answer:"gift",options:["gift","ball","top","boxes"]}]
+            },
+            u4: {
+                words: [{word:"circle",chinese:"圓形",sentence:"The sun is a circle."},{word:"rectangle",chinese:"長方形",sentence:"The door is a rectangle."},{word:"shape",chinese:"形狀",sentence:"What shape is it?"},{word:"square",chinese:"正方形",sentence:"The window is a square."},{word:"star",chinese:"星星",sentence:"I see a star in the sky."},{word:"triangle",chinese:"三角形",sentence:"The pizza slice is a triangle."},{word:"brown",chinese:"棕色",sentence:"The bear is brown."},{word:"color",chinese:"顏色",sentence:"What is your favorite color?"},{word:"green",chinese:"綠色",sentence:"The grass is green."},{word:"pink",chinese:"粉紅色",sentence:"Her dress is pink."},{word:"red",chinese:"紅色",sentence:"An apple is red."},{word:"white",chinese:"白色",sentence:"The snow is white."}],
+                speakingWords: ["circle","rectangle","shape","square","star","triangle","brown","color","green","pink","red","white"],
+                speakingSentences: ["The square is red.","The star is white.","Do you have a green circle?","Yes, I do.","Does she have a pink triangle?","No, she doesn’t."],
+                wordFillIn: [{sentence:"The box is a __.",chinese:"這個盒子是個正方形。",answer:"square"},{sentence:"The ball is a __.",chinese:"這顆球是個圓形。",answer:"circle"},{sentence:"That is a __ star.",chinese:"那是一顆白色的星星。",answer:"white"}],
+                sentenceMatch: [{question:"Do you have a red square?",answer:"Yes, I do."},{question:"Do you have a blue circle?",answer:"No, I don’t."},{question:"What color is the triangle?",answer:"It is green."}],
+                sentenceScramble: ["The star is white.","I have a red circle.","The shape is a square.","This is a brown rectangle."],
+                popQuiz: [{question:"太陽的形狀是？",answer:"circle",options:["circle","square","triangle","star"]},{question:"草的顏色是？",answer:"green",options:["green","red","pink","white"]}]
+            },
+            u5: {
+                words: [{word:"flower",chinese:"花",sentence:"The flower is beautiful."},{word:"jungle gym",chinese:"攀爬架",sentence:"Let's play on the jungle gym."},{word:"playground",chinese:"遊樂場",sentence:"We are at the playground."},{word:"sandbox",chinese:"沙坑",sentence:"He is in the sandbox."},{word:"seesaw",chinese:"蹺蹺板",sentence:"Let's ride the seesaw."},{word:"slide",chinese:"溜滑梯",sentence:"The slide is tall."},{word:"swing",chinese:"鞦韆",sentence:"She is on the swing."},{word:"tree",chinese:"樹",sentence:"The bird is in the tree."},{word:"wall",chinese:"牆",sentence:"The cat is on the wall."},{word:"in",chinese:"在...裡面",sentence:"The cat is in the box."},{word:"near",chinese:"在...附近",sentence:"The school is near my house."},{word:"on",chinese:"在...上面",sentence:"The book is on the desk."}],
+                speakingWords: ["flower","jungle gym","playground","sandbox","seesaw","slide","swing","tree","wall","in","near","on"],
+                speakingSentences: ["The flower is near the tree.","The toy is in the sandbox.","Is the cat on the wall?","Yes, it is.","Are the balls in the box?","No, they aren’t."],
+                wordFillIn: [{sentence:"The boy is on the __.",chinese:"那個男孩在鞦韆上。",answer:"swing"},{sentence:"The cat is __ the tree.",chinese:"貓咪在樹的附近。",answer:"near"},{sentence:"The toy is __ the sandbox.",chinese:"玩具在沙坑裡。",answer:"in"}],
+                sentenceMatch: [{question:"Is the book on the desk?",answer:"Yes, it is."},{question:"Is the ball in the box?",answer:"No, it isn’t."},{question:"Where is the flower?",answer:"It is near the wall."}],
+                sentenceScramble: ["The cat is on the wall.","The tree is near the slide.","I am on the seesaw.","He is in the sandbox."],
+                popQuiz: [{question:"可以上下擺動的遊樂設施是？",answer:"swing",options:["swing","slide","seesaw","sandbox"]},{question:"書在桌子___。",answer:"on",options:["on","in","near","wall"]}]
+            },
+            u6: {
+                words: [{word:"ear",chinese:"耳朵",sentence:"I listen with my ear."},{word:"eye",chinese:"眼睛",sentence:"I see with my eye."},{word:"face",chinese:"臉",sentence:"Wash your face."},{word:"mouth",chinese:"嘴巴",sentence:"I eat with my mouth."},{word:"nose",chinese:"鼻子",sentence:"I smell with my nose."},{word:"tooth",chinese:"牙齒",sentence:"Brush your tooth."},{word:"arm",chinese:"手臂",sentence:"Raise your arm."},{word:"body",chinese:"身體",sentence:"This is my body."},{word:"foot",chinese:"腳",sentence:"This is my left foot."},{word:"hand",chinese:"手",sentence:"Clap your hand."},{word:"leg",chinese:"腿",sentence:"My leg hurts."},{word:"neck",chinese:"脖子",sentence:"My neck is long."}],
+                speakingWords: ["ear","eye","face","mouth","nose","tooth","arm","body","foot","hand","leg","neck"],
+                speakingSentences: ["Touch your nose.","Clap your hands.","Don’t touch your eye.","Raise your arm.","Wash your face."],
+                wordFillIn: [{sentence:"Touch your __.",chinese:"摸你的鼻子。",answer:"nose"},{sentence:"I see with my __.",chinese:"我用我的眼睛看。",answer:"eye"},{sentence:"I have two __s.",chinese:"我有兩條腿。",answer:"leg"}],
+                sentenceMatch: [{question:"What do you use to see?",answer:"My eye."},{question:"What do you use to listen?",answer:"My ear."},{question:"How many hands do you have?",answer:"I have two hands."}],
+                sentenceScramble: ["This is my left arm.","Please wash your face.","Do not touch your mouth.","I have ten fingers on my hands."],
+                popQuiz: [{question:"用來看東西的器官是？",answer:"eye",options:["eye","ear","nose","mouth"]},{question:"用來走路的部位是？",answer:"leg",options:["leg","arm","hand","neck"]}]
+            },
+            u7: {
+                words: [{word:"apple",chinese:"蘋果",sentence:"An apple a day keeps the doctor away."},{word:"banana",chinese:"香蕉",sentence:"Monkeys like bananas."},{word:"fruit",chinese:"水果",sentence:"Fruit is healthy."},{word:"grapes",chinese:"葡萄",sentence:"Grapes are sweet."},{word:"orange",chinese:"橘子",sentence:"An orange is a fruit."},{word:"pear",chinese:"梨",sentence:"I like to eat pear."},{word:"burger",chinese:"漢堡",sentence:"I want a cheeseburger."},{word:"cookie",chinese:"餅乾",sentence:"I want a chocolate cookie."},{word:"fries",chinese:"薯條",sentence:"Fries are made from potatoes."},{word:"ice cream",chinese:"冰淇淋",sentence:"I love ice cream."},{word:"pizza",chinese:"披薩",sentence:"Let's order a pizza."},{word:"potato",chinese:"馬鈴薯",sentence:"A potato is a vegetable."}],
+                speakingWords: ["apple","banana","fruit","grapes","orange","pear","burger","cookie","fries","ice cream","pizza","potato"],
+                speakingSentences: ["What do you eat for lunch?","I eat a burger for lunch.","Do you eat apples?","Yes, I do.","Do they eat cookies?","No, they don’t."],
+                wordFillIn: [{sentence:"I like to eat __s.",chinese:"我喜歡吃蘋果。",answer:"apple"},{sentence:"Do you want some __?",chinese:"你想要一些冰淇淋嗎？",answer:"ice cream"},{sentence:"A monkey likes to eat __s.",chinese:"猴子喜歡吃香蕉。",answer:"banana"}],
+                sentenceMatch: [{question:"Do you like pizza?",answer:"Yes, I do."},{question:"Do you like grapes?",answer:"No, I don’t."},{question:"What do you eat for breakfast?",answer:"I eat fruit."}],
+                sentenceScramble: ["I like to eat an apple.","She does not like pizza.","Do you want a cookie?","They eat burgers for dinner."],
+                popQuiz: [{question:"猴子最愛的水果是？",answer:"banana",options:["banana","apple","orange","pear"]},{question:"通常是圓形，上面有很多料的食物是？",answer:"pizza",options:["pizza","burger","fries","cookie"]}]
+            },
+            u8: {
+                words: [{word:"catch",chinese:"接",sentence:"Catch the ball!"},{word:"jump",chinese:"跳",sentence:"I can jump high."},{word:"play",chinese:"玩",sentence:"Let's play outside."},{word:"run",chinese:"跑",sentence:"He can run fast."},{word:"swim",chinese:"游泳",sentence:"She can swim."},{word:"throw",chinese:"丟",sentence:"Throw the ball to me."},{word:"badminton",chinese:"羽毛球",sentence:"I can play badminton."},{word:"baseball",chinese:"棒球",sentence:"Baseball is a popular sport."},{word:"basketball",chinese:"籃球",sentence:"He is a basketball player."},{word:"hockey",chinese:"曲棍球",sentence:"Hockey is a winter sport."},{word:"soccer",chinese:"足球",sentence:"Let's play soccer."},{word:"tennis",chinese:"網球",sentence:"She plays tennis well."}],
+                speakingWords: ["catch","jump","play","run","swim","throw","badminton","baseball","basketball","hockey","soccer","tennis"],
+                speakingSentences: ["Let's play soccer.","I can swim.","There is a ball on the field.","Where is the tennis racket?","Let's throw the ball."],
+                wordFillIn: [{sentence:"I can play __.",chinese:"我會打籃球。",answer:"basketball"},{sentence:"Let's __ the ball.",chinese:"我們來丟球吧。",answer:"throw"},{sentence:"He can __ very fast.",chinese:"他可以跑得很快。",answer:"run"}],
+                sentenceMatch: [{question:"What sport do you play?",answer:"I play soccer."},{question:"Can you swim?",answer:"Yes, I can."},{question:"Where can we play baseball?",answer:"At the park."}],
+                sentenceScramble: ["I can play tennis well.","He likes to play baseball.","Let us run and jump.","She can catch the ball."],
+                popQuiz: [{question:"需要用手投進高處籃框的運動是？",answer:"basketball",options:["basketball","soccer","baseball","tennis"]},{question:"在水裡進行的運動是？",answer:"swim",options:["swim","run","jump","catch"]}]
+            },
+            u9: {
+                words: [{word:"crocodile",chinese:"鱷魚",sentence:"A crocodile is dangerous."},{word:"elephant",chinese:"大象",sentence:"An elephant is big."},{word:"frog",chinese:"青蛙",sentence:"A frog can jump."},{word:"giraffe",chinese:"長頸鹿",sentence:"A giraffe has a long neck."},{word:"goat",chinese:"山羊",sentence:"A goat can climb."},{word:"hippo",chinese:"河馬",sentence:"A hippo lives in water."},{word:"lion",chinese:"獅子",sentence:"A lion is the king of the jungle."},{word:"lizard",chinese:"蜥蜴",sentence:"A lizard is a reptile."},{word:"monkey",chinese:"猴子",sentence:"A monkey eats bananas."},{word:"tiger",chinese:"老虎",sentence:"A tiger has stripes."},{word:"turtle",chinese:"烏龜",sentence:"A turtle moves slowly."},{word:"zebra",chinese:"斑馬",sentence:"A zebra is black and white."}],
+                speakingWords: ["crocodile","elephant","frog","giraffe","goat","hippo","lion","lizard","monkey","tiger","turtle","zebra"],
+                speakingSentences: ["There was a lion at the zoo.","There were not any tigers.","How was the giraffe?","It was tall.","How were the monkeys?","They were noisy."],
+                wordFillIn: [{sentence:"There was a big __ at the zoo.",chinese:"動物園裡有一隻大象。",answer:"elephant"},{sentence:"The __ was very tall.",chinese:"那隻長頸鹿非常高。",answer:"giraffe"},{sentence:"How were the __s?",chinese:"那些猴子怎麼樣？",answer:"monkey"}],
+                sentenceMatch: [{question:"Was there a tiger at the zoo?",answer:"Yes, there was."},{question:"How was the turtle?",answer:"It was slow."},{question:"How were the lions?",answer:"They were loud."}],
+                sentenceScramble: ["There was a monkey in the tree.","The hippo was in the water.","The elephant was very big.","How was the zebra?"],
+                popQuiz: [{question:"脖子很長的動物是？",answer:"giraffe",options:["giraffe","elephant","lion","monkey"]},{question:"身上有黑白條紋的動物是？",answer:"zebra",options:["zebra","tiger","lizard","goat"]}]
+            },
+            u10: {
+                words: [{word:"breakfast",chinese:"早餐",sentence:"I eat breakfast at 7."},{word:"dinner",chinese:"晚餐",sentence:"We have dinner at 6."},{word:"eleven",chinese:"十一",sentence:"It is eleven o'clock."},{word:"lunch",chinese:"午餐",sentence:"It's time for lunch."},{word:"time",chinese:"時間",sentence:"What time is it?"},{word:"twelve",chinese:"十二",sentence:"It is twelve o'clock."},{word:"Monday",chinese:"星期一",sentence:"Today is Monday."},{word:"Tuesday",chinese:"星期二",sentence:"Tomorrow is Tuesday."},{word:"Wednesday",chinese:"星期三",sentence:"I have a test on Wednesday."},{word:"Thursday",chinese:"星期四",sentence:"She has a class on Thursday."},{word:"Friday",chinese:"星期五",sentence:"I love Friday."},{word:"Saturday",chinese:"星期六",sentence:"Let's play on Saturday."},{word:"Sunday",chinese:"星期日",sentence:"Sunday is a holiday."}],
+                speakingWords: ["breakfast","dinner","eleven","lunch","time","twelve","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+                speakingSentences: ["What time is it?","It's eleven o'clock.","I eat breakfast on Monday.","What do you eat for dinner?","What day is it today?"],
+                wordFillIn: [{sentence:"I eat __ in the morning.",chinese:"我早上吃早餐。",answer:"breakfast"},{sentence:"Today is __.",chinese:"今天是星期一。",answer:"Monday"},{sentence:"What __ is it?",chinese:"現在幾點？",answer:"time"}],
+                sentenceMatch: [{question:"What do you eat in the morning?",answer:"Breakfast."},{question:"What day is after Monday?",answer:"Tuesday."},{question:"What time do you eat lunch?",answer:"At twelve o'clock."}],
+                sentenceScramble: ["What time is it now?","Today is Friday.","I eat lunch at twelve.","Let's have dinner together."],
+                popQuiz: [{question:"早上吃的第一餐是？",answer:"breakfast",options:["breakfast","lunch","dinner","time"]},{question:"一週的第一天是？",answer:"Monday",options:["Monday","Sunday","Friday","Tuesday"]}]
+            }
+        };
+
+        
+        // --- 遊戲渲染邏輯 ---
+        const gameArea = document.getElementById('game-area');
+        const unitSelect = document.getElementById('unit-select');
+        let shuffledData = [];
+        let currentIndex = 0;
+        let currentGameId = null;
+
+        function showGame(gameId) {
+            currentGameId = gameId;
+            const unit = unitSelect.value;
+            const unitData = gameData[unit];
+            gameArea.innerHTML = '';
+            currentIndex = 0;
+            
+            const gameRenderers = {
+                'btn-words-list': () => renderWordsList(unitData.words),
+                'btn-game-word-match': () => { shuffledData = [...unitData.words].sort(() => 0.5 - Math.random()); renderWordMatch(); },
+                'btn-game-word-fill': () => { shuffledData = [...unitData.wordFillIn].sort(() => 0.5 - Math.random()); renderWordFillIn(); },
+                'btn-game2': () => { shuffledData = [...unitData.words].sort(() => 0.5 - Math.random()); renderWordScramble(); },
+                'btn-game-spelling': () => { shuffledData = [...unitData.words].sort(() => 0.5 - Math.random()); renderSpellingGame(); },
+                'btn-game4': () => { shuffledData = [...unitData.sentenceMatch].sort(() => 0.5 - Math.random()); renderSentenceMatch(); },
+                'btn-game5': () => { shuffledData = [...unitData.sentenceScramble].sort(() => 0.5 - Math.random()); renderSentenceScramble(); },
+                'btn-game6': () => { shuffledData = [...unitData.popQuiz].sort(() => 0.5 - Math.random()); renderPopQuiz(); },
+                'btn-game-speak-word': () => { 
+                    shuffledData = [...unitData.speakingWords].sort(() => 0.5 - Math.random()).slice(0, 5); 
+                    renderSpeakingGame('word');
+                },
+                'btn-game-speak-sentence': () => { 
+                    shuffledData = [...unitData.speakingSentences].sort(() => 0.5 - Math.random()).slice(0, 5); 
+                    renderSpeakingGame('sentence');
+                }
+            };
+
+            if (gameRenderers[gameId]) {
+                gameRenderers[gameId]();
+            }
+        }
+        
+        function renderWordsList(words) {
+            gameArea.innerHTML = `<h2 class="text-2xl font-bold text-center mb-6 text-blue-600">單字卡學習區</h2><div id="words-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>`;
+            const wordsGrid = document.getElementById('words-grid');
+            words.forEach(word => {
+                const card = document.createElement('div');
+                card.className = 'word-card card-shadow';
+                card.innerHTML = `
+                    <div>
+                        <p class="text-2xl md:text-3xl font-bold text-gray-800">${word.word}</p>
+                        <p class="text-lg md:text-xl text-gray-600 mt-2">${word.chinese}</p>
+                        <p class="text-md text-gray-500 mt-2 italic">"${word.sentence}"</p>
+                    </div>
+                    <div class="flex justify-center items-center space-x-2 mt-4">
+                         <button class="px-4 py-2 rounded-full bg-blue-500 text-white text-sm font-semibold" title="朗讀單字" onclick="event.stopPropagation(); speakWord('${word.word}')">
+                            單字
+                         </button>
+                         <button class="px-4 py-2 rounded-full bg-green-500 text-white text-sm font-semibold" title="朗讀句子" onclick="event.stopPropagation(); speakWord('${word.sentence.replace(/'/g, "\\'")}')">
+                            句子
+                         </button>
+                    </div>
+                `;
+                card.onclick = () => speakWord(word.word);
+                wordsGrid.appendChild(card);
+            });
+        }
+        
+        function renderWordMatch() {
+            if (shuffledData.length === 0) {
+                 gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                 handleGameComplete(currentGameId);
+                 return;
+            }
+            const totalWords = Math.min(6, shuffledData.length);
+            const currentSet = shuffledData.slice(0, totalWords);
+            shuffledData = shuffledData.slice(totalWords);
+            
+            const allWords = [...currentSet];
+            const allChinese = [...currentSet].sort(() => 0.5 - Math.random());
+            
+            gameArea.innerHTML = `<h2 class="text-2xl font-bold text-center mb-6 text-teal-600">單字配對</h2><div class="grid grid-cols-2 gap-4 md:gap-8 w-full max-w-2xl mx-auto"><div id="words-col" class="flex flex-col space-y-4"></div><div id="chinese-col" class="flex flex-col space-y-4"></div></div><div class="text-center mt-6"><p id="match-status" class="text-lg font-bold text-gray-500"></p></div>`;
+            const wordsCol = document.getElementById('words-col');
+            const chineseCol = document.getElementById('chinese-col');
+            const matchStatus = document.getElementById('match-status');
+            
+            let selectedWordBtn = null;
+            let matchedCount = 0;
+            
+            allWords.forEach(item => {
+                const wordBtn = document.createElement('button');
+                wordBtn.textContent = item.word;
+                wordBtn.dataset.chinese = item.chinese;
+                wordBtn.className = 'match-card bg-teal-200 text-teal-800 hover:bg-teal-300 text-left font-bold p-4 text-lg';
+                wordBtn.addEventListener('click', () => {
+                    if (selectedWordBtn) selectedWordBtn.classList.remove('match-selected');
+                    selectedWordBtn = wordBtn;
+                    wordBtn.classList.add('match-selected');
+                    speakWord(item.word);
+                });
+                wordsCol.appendChild(wordBtn);
+            });
+            
+            allChinese.forEach(item => {
+                const chineseBtn = document.createElement('button');
+                chineseBtn.textContent = item.chinese;
+                chineseBtn.className = 'match-card bg-orange-200 text-orange-800 hover:bg-orange-300 text-left font-bold p-4 text-lg';
+                chineseBtn.addEventListener('click', () => {
+                    if (!selectedWordBtn) {
+                        matchStatus.textContent = '請先選擇左邊的一個英文單字!';
+                        return;
+                    }
+                    if (selectedWordBtn.dataset.chinese === item.chinese) {
+                        selectedWordBtn.style.opacity = '0';
+                        chineseBtn.style.opacity = '0';
+                        setTimeout(() => {
+                           selectedWordBtn.classList.add('hidden');
+                           chineseBtn.classList.add('hidden');
+                        }, 300);
+                        selectedWordBtn = null;
+                        matchStatus.textContent = '配對成功!';
+                        matchedCount++;
+                        showCorrectMessage();
+                        if (matchedCount === totalWords) {
+                            setTimeout(() => renderWordMatch(), 1500);
+                        }
+                    } else {
+                        matchStatus.textContent = '配對失敗，請再試一次!';
+                        selectedWordBtn.classList.remove('match-selected');
+                        selectedWordBtn = null;
+                        showErrorMessage();
+                    }
+                });
+                chineseCol.appendChild(chineseBtn);
+            });
+        }
+        
+        function renderWordFillIn() {
+            if (currentIndex >= shuffledData.length) {
+                gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                handleGameComplete(currentGameId);
+                return;
+            }
+            const currentItem = shuffledData[currentIndex];
+            gameArea.innerHTML = `<h2 class="text-2xl font-bold mb-6 text-indigo-600">單字填空</h2><div class="text-center"><p class="text-2xl mb-2">${currentItem.sentence.replace('__', '<span class="text-red-500 font-bold">____</span>')}</p><p class="text-lg text-gray-500 mb-6">${currentItem.chinese}</p></div><div id="word-options" class="flex flex-wrap justify-center gap-4 mb-4"></div>`;
+            const wordOptionsDiv = document.getElementById('word-options');
+            const allWords = gameData[unitSelect.value].words.map(w => w.word);
+            const options = [currentItem.answer, ...allWords.filter(w => w !== currentItem.answer).sort(() => 0.5 - Math.random()).slice(0, 3)].sort(() => 0.5 - Math.random());
+            
+            // Speak the sentence as a guide
+            speakWord(currentItem.sentence.replace(/__/g, 'blank'));
+
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.textContent = option;
+                btn.className = 'px-4 py-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition font-bold';
+                btn.onclick = () => {
+                    if (option === currentItem.answer) {
+                        showCorrectMessage();
+                        setTimeout(() => { currentIndex++; renderWordFillIn(); }, 1500);
+                    } else { showErrorMessage(); }
+                };
+                wordOptionsDiv.appendChild(btn);
+            });
+
+            // 念出所有選項
+            options.forEach((option, index) => {
+                setTimeout(() => {
+                    speakWord(option);
+                }, (index + 1) * 700); // 延遲念出，避免與題目重疊
+            });
+        }
+        
+        function renderWordScramble() {
+            if (currentIndex >= shuffledData.length) {
+                gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                handleGameComplete(currentGameId);
+                return;
+            }
+            const item = shuffledData[currentIndex];
+            gameArea.innerHTML = `
+                <h2 class="text-2xl font-bold text-center mb-6 text-green-600">單字重組</h2>
+                <div class="text-center w-full max-w-lg">
+                    <p class="text-lg text-gray-500 mb-4">${item.chinese}</p>
+                    <div id="rearrange-container" class="flex flex-wrap justify-center gap-2 mb-4"></div>
+                    <div id="rearranged-word" class="min-h-12 border-2 border-dashed border-gray-400 rounded-lg p-2 flex flex-wrap justify-center gap-2 mb-4"></div>
+                    <div class="flex justify-center space-x-4 mb-6">
+                        <button id="clear-one-btn" class="px-4 py-2 rounded-full bg-yellow-500 text-white font-bold">清除一字</button>
+                        <button id="clear-all-btn" class="px-4 py-2 rounded-full bg-red-500 text-white font-bold">全部清除</button>
+                    </div>
+                    <div class="flex justify-center space-x-4">
+                        <button id="hint-next-letter-btn" class="px-4 py-2 rounded-full bg-blue-500 text-white font-bold">提示下一個字母 (2)</button>
+                        <button id="hint-pronounce-btn" class="px-4 py-2 rounded-full bg-purple-500 text-white font-bold">正常發音</button>
+                        <button id="hint-spell-out-btn" class="px-4 py-2 rounded-full bg-cyan-500 text-white font-bold">拼出單字</button>
+                    </div>
+                </div>`;
+            const rearrangeContainer = document.getElementById('rearrange-container');
+            const rearrangedWord = document.getElementById('rearranged-word');
+            const clearOneBtn = document.getElementById('clear-one-btn');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            const hintNextLetterBtn = document.getElementById('hint-next-letter-btn');
+            const hintPronounceBtn = document.getElementById('hint-pronounce-btn');
+            const hintSpellOutBtn = document.getElementById('hint-spell-out-btn');
+
+            let hintsRemaining = 2;
+
+            // Speak the word slowly as an initial clue
+            speakWord(item.word, 0.7);
+
+            item.word.split('').sort(() => 0.5 - Math.random()).forEach((letter, index) => {
+                const token = document.createElement('div');
+                token.textContent = letter;
+                token.dataset.id = index;
+                token.className = 'word-token px-3 py-1 rounded-full bg-green-200 text-green-800 font-bold card-shadow';
+                token.onclick = () => {
+                    rearrangedWord.appendChild(token);
+                    checkAnswer();
+                };
+                rearrangeContainer.appendChild(token);
+            });
+            
+            const checkAnswer = () => {
+                const currentAnswer = Array.from(rearrangedWord.children).map(t => t.textContent).join('');
+                if (currentAnswer === item.word) {
+                    showCorrectMessage();
+                    speakWord(item.word);
+                    setTimeout(() => { currentIndex++; renderWordScramble(); }, 1500);
+                }
+            };
+            
+            clearAllBtn.onclick = () => { while(rearrangedWord.firstChild) rearrangeContainer.appendChild(rearrangedWord.firstChild); };
+            clearOneBtn.onclick = () => { if (rearrangedWord.lastChild) rearrangeContainer.appendChild(rearrangedWord.lastChild); };
+            hintPronounceBtn.onclick = () => speakWord(item.word);
+            hintSpellOutBtn.onclick = () => {
+                const letters = item.word.split('');
+                letters.forEach((letter, index) => {
+                    setTimeout(() => {
+                        speakWord(letter);
+                    }, index * 400); // Stagger the speech
+                });
+            };
+
+            hintNextLetterBtn.onclick = () => {
+                if (hintsRemaining <= 0) return;
+                const currentAnswerString = Array.from(rearrangedWord.children).map(div => div.textContent).join('');
+                const correctWord = item.word;
+                let correctPrefixLength = 0;
+                for (let i = 0; i < correctWord.length; i++) {
+                    if (i < currentAnswerString.length && currentAnswerString[i] === correctWord[i]) correctPrefixLength++;
+                    else break;
+                }
+                if (correctPrefixLength === correctWord.length) return;
+                while (rearrangedWord.children.length > correctPrefixLength) rearrangeContainer.appendChild(rearrangedWord.lastChild);
+                const nextCorrectChar = correctWord[correctPrefixLength];
+                const letterTokenToMove = Array.from(rearrangeContainer.children).find(token => token.textContent === nextCorrectChar);
+                if (letterTokenToMove) rearrangedWord.appendChild(letterTokenToMove);
+                hintsRemaining--;
+                hintNextLetterBtn.textContent = `提示下一個字母 (${hintsRemaining})`;
+                if (hintsRemaining <= 0) {
+                    hintNextLetterBtn.disabled = true;
+                    hintNextLetterBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                checkAnswer();
+            };
+        }
+        
+        function renderSpellingGame() {
+            if (currentIndex >= shuffledData.length) {
+                gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                handleGameComplete(currentGameId);
+                return;
+            }
+            const item = shuffledData[currentIndex];
+            let hintsUsed = 0;
+
+            gameArea.innerHTML = `
+                <h2 class="text-2xl font-bold text-center mb-6 text-orange-600">單字拼寫 (每題20分)</h2>
+                <div class="text-center w-full max-w-md">
+                    <p class="text-3xl font-bold text-gray-700 mb-2">${item.chinese}</p>
+                    <p class="text-lg text-gray-500 mb-6 italic">"${item.sentence.replace(new RegExp(item.word, 'ig'), '____')}"</p>
+                    <div class="flex items-center justify-center space-x-2 mb-4">
+                         <input type="text" id="spelling-input" class="text-2xl text-center form-input px-4 py-2 w-full rounded-lg border-2 border-gray-300 focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                         <button id="check-spelling-btn" class="px-6 py-3 rounded-lg bg-orange-500 text-white font-bold text-lg">確認</button>
+                    </div>
+                    <div class="flex justify-center space-x-4 mt-4">
+                        <button id="hint-next-letter-btn" class="px-4 py-2 rounded-full bg-teal-500 text-white font-bold">提示下一個字母 (剩 2 次)</button>
+                        <button id="pronounce-btn" class="px-4 py-2 rounded-full bg-purple-500 text-white font-bold">正常發音</button>
+                        <button id="hint-spell-out-btn" class="px-4 py-2 rounded-full bg-cyan-500 text-white font-bold">拼出單字</button>
+                    </div>
+                </div>
+            `;
+
+            const spellingInput = document.getElementById('spelling-input');
+            const checkBtn = document.getElementById('check-spelling-btn');
+            const hintBtn = document.getElementById('hint-next-letter-btn');
+            const pronounceBtn = document.getElementById('pronounce-btn');
+            const hintSpellOutBtn = document.getElementById('hint-spell-out-btn');
+
+            spellingInput.focus();
+
+            const checkAnswer = () => {
+                if (spellingInput.value.trim().toLowerCase() === item.word.toLowerCase()) {
+                    showCorrectMessage(20);
+                    speakWord(item.word);
+                    setTimeout(() => { currentIndex++; renderSpellingGame(); }, 1500);
+                } else {
+                    showErrorMessage();
+                    spellingInput.classList.add('border-red-500');
+                    setTimeout(() => spellingInput.classList.remove('border-red-500'), 1000);
+                }
+            };
+
+            checkBtn.addEventListener('click', checkAnswer);
+            spellingInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
+            pronounceBtn.addEventListener('click', () => speakWord(item.word));
+            hintSpellOutBtn.addEventListener('click', () => {
+                const letters = item.word.split('');
+                letters.forEach((letter, index) => {
+                    setTimeout(() => {
+                        speakWord(letter);
+                    }, index * 400);
+                });
+            });
+
+            hintBtn.addEventListener('click', () => {
+                if (hintsUsed >= 2) return;
+                hintsUsed++;
+                const remainingHints = 2 - hintsUsed;
+                hintBtn.textContent = `提示下一個字母 (剩 ${remainingHints} 次)`;
+                if (remainingHints <= 0) {
+                     hintBtn.disabled = true;
+                     hintBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                const currentInput = spellingInput.value.toLowerCase();
+                const correctWord = item.word.toLowerCase();
+                let firstIncorrectIndex = -1;
+                for(let i = 0; i < correctWord.length; i++) {
+                    if(i >= currentInput.length || currentInput[i] !== correctWord[i]) {
+                        firstIncorrectIndex = i;
+                        break;
+                    }
+                }
+                if (firstIncorrectIndex !== -1) spellingInput.value = correctWord.substring(0, firstIncorrectIndex + 1);
+                spellingInput.focus();
+            });
+        }
+
+        function renderSentenceMatch() {
+            if (shuffledData.length === 0) {
+                 gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                 handleGameComplete(currentGameId);
+                 return;
+            }
+            const totalQuestions = Math.min(5, shuffledData.length);
+            const currentSet = shuffledData.slice(0, totalQuestions);
+            shuffledData = shuffledData.slice(totalQuestions);
+            
+            gameArea.innerHTML = `<h2 class="text-2xl font-bold text-center mb-6 text-purple-600">句子配對</h2><div class="grid grid-cols-2 gap-4 md:gap-8 w-full max-w-3xl mx-auto"><div id="questions-col" class="flex flex-col space-y-4"></div><div id="answers-col" class="flex flex-col space-y-4"></div></div><p id="match-status" class="text-lg font-bold text-gray-500 mt-6"></p>`;
+            const questionsCol = document.getElementById('questions-col');
+            const answersCol = document.getElementById('answers-col');
+            const matchStatus = document.getElementById('match-status');
+            
+            let selectedQuestionBtn = null;
+            let matchedCount = 0;
+
+            currentSet.forEach(q => {
+                const qBtn = document.createElement('button');
+                qBtn.textContent = q.question;
+                qBtn.dataset.answer = q.answer;
+                qBtn.className = 'match-card bg-purple-200 text-purple-800 hover:bg-purple-300 text-left p-4';
+                qBtn.onclick = () => {
+                    if (selectedQuestionBtn) selectedQuestionBtn.classList.remove('match-selected');
+                    selectedQuestionBtn = qBtn;
+                    qBtn.classList.add('match-selected');
+                    speakWord(q.question);
+                };
+                questionsCol.appendChild(qBtn);
+            });
+
+            currentSet.sort(() => 0.5 - Math.random()).forEach(a => {
+                const aBtn = document.createElement('button');
+                aBtn.textContent = a.answer;
+                aBtn.className = 'match-card bg-blue-200 text-blue-800 hover:bg-blue-300 text-left p-4';
+                aBtn.onclick = () => {
+                    if (!selectedQuestionBtn) {
+                        matchStatus.textContent = '請先選擇左邊的一個問題!';
+                        return;
+                    }
+                    if (selectedQuestionBtn.dataset.answer === a.answer) {
+                        selectedQuestionBtn.style.opacity = '0';
+                        aBtn.style.opacity = '0';
+                        setTimeout(() => {
+                           selectedQuestionBtn.classList.add('hidden');
+                           aBtn.classList.add('hidden');
+                        }, 300);
+                        selectedQuestionBtn = null;
+                        matchStatus.textContent = '配對成功!';
+                        matchedCount++;
+                        showCorrectMessage();
+                        speakWord(a.answer);
+                        if (matchedCount === totalQuestions) {
+                            setTimeout(() => renderSentenceMatch(), 1500);
+                        }
+                    } else {
+                        matchStatus.textContent = '配對失敗，請再試一次!';
+                        selectedQuestionBtn.classList.remove('match-selected');
+                        selectedQuestionBtn = null;
+                        showErrorMessage();
+                    }
+                };
+                answersCol.appendChild(aBtn);
+            });
+        }
+
+        function renderSentenceScramble() {
+            if (currentIndex >= shuffledData.length) {
+                gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                handleGameComplete(currentGameId);
+                return;
+            }
+            const currentSentence = shuffledData[currentIndex];
+            gameArea.innerHTML = `<h2 class="text-2xl font-bold text-center mb-6 text-pink-600">句子重組</h2><div class="text-center"><div class="mb-4"><button id="hint-sentence-audio-btn" class="px-4 py-2 rounded-full bg-blue-500 text-white font-bold">聽句子提示</button></div><div id="sentence-container" class="flex flex-wrap justify-center gap-2 mb-6"></div><div id="solution-container" class="min-h-16 border-2 border-dashed border-gray-400 rounded-lg p-4 flex flex-wrap justify-center gap-2 mb-6"></div></div>`;
+            const sentenceContainer = document.getElementById('sentence-container');
+            const solutionContainer = document.getElementById('solution-container');
+            const hintSentenceAudioBtn = document.getElementById('hint-sentence-audio-btn');
+            
+            hintSentenceAudioBtn.onclick = () => speakWord(currentSentence);
+
+            currentSentence.split(' ').sort(() => 0.5 - Math.random()).forEach(word => {
+                const token = document.createElement('div');
+                token.textContent = word;
+                token.className = 'word-token px-3 py-1 rounded-full bg-pink-200 text-pink-800 font-bold card-shadow';
+                token.onclick = () => {
+                    solutionContainer.appendChild(token);
+                    speakWord(word); // Read the word when clicked
+                    if (Array.from(solutionContainer.children).map(el => el.textContent).join(' ') === currentSentence) {
+                        showCorrectMessage();
+                        speakWord(currentSentence);
+                        setTimeout(() => { currentIndex++; renderSentenceScramble(); }, 1500);
+                    }
+                };
+                sentenceContainer.appendChild(token);
+            });
+        }
+        
+        function renderPopQuiz() {
+            if (currentIndex >= shuffledData.length) {
+                gameArea.innerHTML = '<p class="text-2xl font-bold text-green-600">恭喜你完成所有題目!</p>';
+                handleGameComplete(currentGameId);
+                return;
+            }
+            const currentQuiz = shuffledData[currentIndex];
+            gameArea.innerHTML = `<h2 class="text-2xl font-bold text-center mb-6 text-red-600">快問快答</h2><div class="text-center"><p class="text-xl mb-4">請選出這個中文詞彙的英文單字：${currentQuiz.question}</p><div id="quiz-options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div>`;
+            const quizOptionsDiv = document.getElementById('quiz-options');
+            [...currentQuiz.options].sort(() => 0.5 - Math.random()).forEach(option => {
+                const btn = document.createElement('button');
+                btn.textContent = option;
+                btn.className = 'px-4 py-3 rounded-full bg-red-600 text-white hover:bg-red-700 transition font-bold text-lg';
+                btn.onclick = () => {
+                    if (option.toLowerCase() === currentQuiz.answer.toLowerCase()) {
+                        showCorrectMessage();
+                        speakWord(option);
+                        setTimeout(() => { currentIndex++; renderPopQuiz(); }, 1500);
+                    } else { showErrorMessage(); }
+                };
+                quizOptionsDiv.appendChild(btn);
+            });
+        }
+
+        // --- AI 口說評測邏輯 ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        const micIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+        const stopIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>`;
+
+
+        function normalizeText(text) { return text ? text.trim().toLowerCase().replace(/[.,?!]/g, '') : ''; }
+
+        function renderSpeakingGame(gameType) {
+            if (!SpeechRecognition) {
+                gameArea.innerHTML = `<p class="text-xl text-red-500 font-bold">抱歉！您的瀏覽器不支援語音辨識功能。</p><p class="text-gray-500 mt-2">建議使用最新版本的 Chrome 瀏覽器以獲得最佳體驗。</p>`;
+                return;
+            }
+
+            const title = gameType === 'word' ? 'AI口說評測 (單字)' : 'AI口說評測 (句子)';
+            const titleColor = gameType === 'word' ? 'text-cyan-600' : 'text-sky-600';
+            const totalQuestions = shuffledData.length;
+            let itemScores = new Array(totalQuestions).fill(null);
+            
+            function showQuestion() {
+                if (currentIndex >= totalQuestions) {
+                    const finalScore = itemScores.reduce((acc, s) => acc + (s || 0), 0);
+                    const maxScore = totalQuestions * 100;
+                    gameArea.innerHTML = `
+                        <div class="text-center p-8">
+                            <h2 class="text-3xl font-bold text-green-600 mb-4">👍 練習完成！ 👍</h2>
+                            <p class="text-xl text-gray-700 mb-2">恭喜你完成所有口說題目!</p>
+                            <p class="text-2xl font-bold my-6">本次練習總分: <span class="text-orange-500">${finalScore}</span> / ${maxScore} 分</p>
+                            <button id="play-again-btn" class="px-8 py-3 rounded-full bg-cyan-600 text-white font-bold text-lg hover:bg-cyan-700 transition">再玩一次</button>
+                        </div>
+                    `;
+                    document.getElementById('play-again-btn').onclick = () => showGame(currentGameId);
+                    handleGameComplete(currentGameId);
+                    return;
+                }
+                const currentItem = shuffledData[currentIndex];
+                const currentScore = itemScores[currentIndex];
+
+                gameArea.innerHTML = `
+                    <h2 class="text-2xl font-bold text-center mb-2 ${titleColor}">${title}</h2>
+                    <p class="text-lg font-semibold text-gray-600 mb-4">題目 ${currentIndex + 1} / ${totalQuestions}</p>
+                    <div class="w-full max-w-2xl text-center">
+                        <div class="flex items-center justify-center space-x-4 mb-4">
+                            <h3 id="target-text" class="text-4xl font-bold text-gray-800 p-4 bg-gray-100 rounded-lg">${currentItem}</h3>
+                            <button class="pronounce-btn" title="正常速度" onclick="speakWord('${currentItem.replace(/'/g, "\\'")}')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+                            <button class="pronounce-btn pronounce-btn-slow" title="慢速播放" onclick="speakWord('${currentItem.replace(/'/g, "\\'")}', 0.7)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a3.5 3.5 0 0 1 3.5-3.5h13A3.5 3.5 0 0 1 22 18a3.5 3.5 0 0 1-3.5 3.5h-13A3.5 3.5 0 0 1 2 18Z"/><path d="M11.77 12.77a2 2 0 0 0-2.2-2.2L2 14.8V13a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1.8l-8.23-2.57Z"/><path d="M12.23 6.23a2 2 0 0 0 2.2-2.2L22 2.2V4a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V2.2l6.23 4.03Z"/></svg></button>
+                        </div>
+                        
+                        <div id="score-area" class="my-4 min-h-[60px] flex items-center justify-center">
+                            ${currentScore !== null ? `<p class="text-2xl font-bold">上次得分: <span class="text-blue-600">${currentScore} / 100</span></p>` : ''}
+                        </div>
+
+                        <div class="flex justify-center items-center mb-4 mt-2">
+                            <button id="mic-btn" class="mic-btn" title="點擊開始錄音">${micIconSVG}</button>
+                        </div>
+
+                        <p id="status-text" class="text-lg text-gray-500 min-h-[28px]">點擊麥克風開始</p>
+                        <div id="result-text" class="mt-4 text-xl font-semibold min-h-[32px]"></div>
+                        
+                        <div id="navigation-area" class="mt-6 flex justify-center items-center space-x-2 md:space-x-4">
+                            <button id="prev-btn" class="px-4 py-3 rounded-full bg-gray-400 text-white font-bold text-lg">上一題</button>
+                            <button id="record-again-btn" class="px-4 py-3 rounded-full bg-yellow-500 text-white font-bold text-lg">再錄一次</button>
+                            <button id="next-btn" class="px-4 py-3 rounded-full bg-blue-500 text-white font-bold text-lg">下一題</button>
+                        </div>
+                        
+                        <div class="mt-4">
+                             <button id="finish-btn" class="hidden px-8 py-3 rounded-full bg-green-600 text-white font-bold text-lg">完成練習</button>
+                        </div>
+                    </div>
+                `;
+
+                const micBtn = document.getElementById('mic-btn');
+                const statusText = document.getElementById('status-text');
+                const resultText = document.getElementById('result-text');
+                const scoreArea = document.getElementById('score-area');
+                const navigationArea = document.getElementById('navigation-area');
+                const prevBtn = document.getElementById('prev-btn');
+                const nextBtn = document.getElementById('next-btn');
+                const recordAgainBtn = document.getElementById('record-again-btn');
+                const finishBtn = document.getElementById('finish-btn');
+                
+                navigationArea.classList.add('hidden');
+                if (itemScores.every(s => s !== null)) {
+                    finishBtn.classList.remove('hidden');
+                }
+
+                let isRecording = false;
+                
+                micBtn.onclick = () => {
+                    if (isRecording) {
+                        if (recognition) {
+                            statusText.textContent = '正在處理與評分中...';
+                            recognition.stop();
+                        }
+                        return;
+                    }
+                    isRecording = true;
+                    if (recognition) recognition.abort();
+                    
+                    micBtn.innerHTML = stopIconSVG;
+                    micBtn.title = '點擊停止錄音';
+                    micBtn.classList.add('is-listening');
+                    statusText.textContent = '正在聆聽...';
+                    resultText.textContent = '';
+                    scoreArea.innerHTML = '';
+                    navigationArea.classList.add('hidden');
+                    finishBtn.classList.add('hidden');
+
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'en-US';
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+                    recognition.start();
+
+                    recognition.onresult = (event) => {
+                        const speechResult = event.results[0][0];
+                        const transcript = speechResult.transcript;
+                        const confidence = speechResult.confidence;
+                        const userText = normalizeText(transcript);
+                        const targetText = normalizeText(currentItem);
+                        const isMatch = userText === targetText;
+                        
+                        let score = 0;
+                        if (isMatch) {
+                            score = 60 + Math.round(confidence * 40);
+                        } else {
+                            score = Math.round(confidence * 50);
+                        }
+                        score = Math.min(100, score);
+
+                        const oldItemScore = itemScores[currentIndex] || 0;
+                        if (score > oldItemScore) {
+                            const pointsToAward = Math.round((score - oldItemScore) / 10);
+                            if (pointsToAward > 0 && typeof window.handleCorrectAnswer === 'function') {
+                                window.handleCorrectAnswer(pointsToAward);
+                            }
+                        }
+                        itemScores[currentIndex] = score;
+
+                        resultText.innerHTML = `你說的是: <span class="text-blue-600">${transcript}</span>`;
+                        scoreArea.innerHTML = `<p class="text-3xl font-bold">本次得分: <span class="${score >= 60 ? 'text-green-600' : 'text-red-500'}">${score} / 100</span></p>`;
+                        
+                        if (isMatch && confidence > 0.4) {
+                            statusText.innerHTML = `發音清晰度: <span class="font-bold">${Math.round(confidence * 100)}%</span>。做得很好！`;
+                            statusText.className = 'text-lg text-green-600 font-bold min-h-[28px]';
+                        } else {
+                            statusText.innerHTML = !isMatch ? `內容不符，請再試一次！` : `發音清晰度不足，請再大聲清楚地說一次！`;
+                            statusText.className = 'text-lg text-red-500 font-bold min-h-[28px]';
+                        }
+                    };
+
+                    recognition.onerror = (event) => {
+                        let friendlyError = '發生錯誤，請再試一次。';
+                        if (event.error === 'no-speech') friendlyError = '沒有偵測到聲音，請再試一次。';
+                        if (event.error === 'not-allowed') friendlyError = '您尚未授權使用麥克風。';
+                        statusText.textContent = friendlyError;
+                    };
+
+                    recognition.onend = () => { 
+                       isRecording = false;
+                       micBtn.classList.add('hidden');
+                       navigationArea.classList.remove('hidden');
+                       if (itemScores.every(s => s !== null)) {
+                           finishBtn.classList.remove('hidden');
+                       }
+                    };
+                };
+                
+                prevBtn.disabled = currentIndex === 0;
+                if (prevBtn.disabled) prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                prevBtn.onclick = () => { if (currentIndex > 0) { currentIndex--; showQuestion(); } };
+
+                nextBtn.onclick = () => { currentIndex++; showQuestion(); };
+                
+                recordAgainBtn.onclick = () => {
+                     micBtn.classList.remove('hidden');
+                     micBtn.innerHTML = micIconSVG;
+                     micBtn.title = '點擊開始錄音';
+                     micBtn.classList.remove('is-listening');
+                     micBtn.click();
+                };
+                
+                finishBtn.onclick = () => {
+                     currentIndex = totalQuestions;
+                     showQuestion();
+                };
+            }
+            showQuestion();
+        }
+
+        // --- 綁定導覽列按鈕事件 ---
+        document.querySelectorAll('.btn-game').forEach(btn => btn.addEventListener('click', (e) => showGame(e.target.id)));
+        
+        // 頁面載入時更新寶可夢球數量
+        updatePokeballs();
+    </script>
+</body>
+</html>
